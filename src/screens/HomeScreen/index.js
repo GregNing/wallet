@@ -7,23 +7,25 @@ import {
   ActivityIndicator,
   Modal,
 } from "react-native";
-import { Button, Card, List } from "react-native-paper";
+import { Button, Card, List, Appbar } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BarCodeScanner } from "expo-barcode-scanner";
 
-const HomeScreen = () => {
+const HomeScreen = (props) => {
   const [scanned, setScanned] = useState(false);
   const [state, setState] = useState({
-    address: '',
-    privateKey: '',
+    address: "",
+    privateKey: "",
     isLoading: true,
     account: null,
     ETHBalance: null,
   });
 
+  const { navigation } = props;
+
   const checkWallet = async () => {
-    console.log('check wallet');
-  }
+    console.log("check Wallet status");
+  };
 
   const requestPermissionsAsync = async () => {
     await BarCodeScanner.requestPermissionsAsync();
@@ -38,35 +40,36 @@ const HomeScreen = () => {
     requestPermissionsAsync();
   }, []);
 
-  const ETHBalance = () => {
-    if (state.ETHBalance) {
-      return (
-        <View style={{ flexDirection: "row", marginBottom: 20 }}>
-          <Text style={styles.balanceTextStyle}>
-            {state.ETHBalance} ETH
-          </Text>
-        </View>
-      );
-    }
-    return (
-      <ActivityIndicator size="large" color="#fff" />
-    )
-  }
-
   return (
     <View style={styles.container}>
       <Text style={styles.addressTextStyle}>{state.address}</Text>
-      <ETHBalance />
+
+      {state.ETHBalance ? (
+        <View style={{ flexDirection: "row", marginBottom: 20 }}>
+          <Text
+            style={styles.balanceTextStyle}
+          >
+            {state.ETHBalance} ETH
+          </Text>
+        </View>
+      ) : (
+        <ActivityIndicator size="large" color="#fff" />
+      )}
+
       <Card>
         <Card.Actions>
           <View style={styles.rowStyle}>
             <View style={styles.columnStyle}>
-              <Button icon="send" mode="outlined" onPress={() => false}>
+              <Button icon="send" mode="outlined" onPress={() => {
+                navigation.navigate('SendETH');
+              }}>
                 Send
               </Button>
             </View>
             <View style={styles.columnStyle}>
-              <Button icon="qrcode" mode="contained" onPress={() => false}>
+              <Button icon="qrcode" mode="contained" onPress={() => {
+                navigation.navigate('Qrcode');
+              }}>
                 Receive
               </Button>
             </View>
@@ -83,11 +86,16 @@ const HomeScreen = () => {
         </Card.Actions>
       </Card>
       <Modal visible={scanned}>
+        <Appbar.Header>
+          <Appbar.BackAction onPress={() => setScanned(false)} />
+          <Appbar.Content title="Title" />
+        </Appbar.Header>
         <BarCodeScanner
+          style={{ flex: 1 }}
           onBarCodeScanned={!scanned ? undefined : handleBarCodeScanned}
-          style={StyleSheet.absoluteFillObject}
         />
       </Modal>
+
       <List.Item
         title="Eth"
         description="Ethereum"
@@ -115,8 +123,8 @@ const HomeScreen = () => {
         </Button>
       </View>
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
