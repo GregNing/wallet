@@ -10,6 +10,14 @@ import {
 import { Button, Card, List, Appbar } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BarCodeScanner } from "expo-barcode-scanner";
+import Web3 from "web3";
+
+const web3 = new Web3();
+web3.setProvider(
+  new web3.providers.HttpProvider(
+    "https://ropsten.infura.io/v3/6f2b1d72cacc4f4cbc1559d086ed5158"
+  )
+);
 
 const HomeScreen = (props) => {
   const [scanned, setScanned] = useState(false);
@@ -23,8 +31,26 @@ const HomeScreen = (props) => {
 
   const { navigation } = props;
 
+  const getETHBalance = async (address) => {
+    const balance = await web3.eth.getBalance(address);
+    const nextBalance = web3.utils.fromWei(balance, "ether");
+    return Number(nextBalance).toFixed(3);
+  };
+
   const checkWallet = async () => {
-    console.log("check Wallet status");
+    const accountStr = await AsyncStorage.getItem("account");
+    if (accountStr) {
+      const account = JSON.parse(accountStr);
+      const balance = await getETHBalance(account.address);
+
+      setState({
+        ...account,
+        ETHBalance: balance,
+        isLoading: false,
+      });
+    } else {
+      navigation.replace("Welcome");
+    }
   };
 
   const requestPermissionsAsync = async () => {
@@ -46,11 +72,7 @@ const HomeScreen = (props) => {
 
       {state.ETHBalance ? (
         <View style={{ flexDirection: "row", marginBottom: 20 }}>
-          <Text
-            style={styles.balanceTextStyle}
-          >
-            {state.ETHBalance} ETH
-          </Text>
+          <Text style={styles.balanceTextStyle}>{state.ETHBalance} ETH</Text>
         </View>
       ) : (
         <ActivityIndicator size="large" color="#fff" />
@@ -60,16 +82,24 @@ const HomeScreen = (props) => {
         <Card.Actions>
           <View style={styles.rowStyle}>
             <View style={styles.columnStyle}>
-              <Button icon="send" mode="outlined" onPress={() => {
-                navigation.navigate('SendETH');
-              }}>
+              <Button
+                icon="send"
+                mode="outlined"
+                onPress={() => {
+                  navigation.navigate("SendETH");
+                }}
+              >
                 Send
               </Button>
             </View>
             <View style={styles.columnStyle}>
-              <Button icon="qrcode" mode="contained" onPress={() => {
-                navigation.navigate('Qrcode');
-              }}>
+              <Button
+                icon="qrcode"
+                mode="contained"
+                onPress={() => {
+                  navigation.navigate("Qrcode");
+                }}
+              >
                 Receive
               </Button>
             </View>
@@ -117,6 +147,7 @@ const HomeScreen = (props) => {
           mode="outlined"
           onPress={async () => {
             await AsyncStorage.removeItem("account");
+            navigation.replace("Welcome");
           }}
         >
           Logout
